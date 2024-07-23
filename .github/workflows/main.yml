@@ -32,7 +32,7 @@ jobs:
       - name: Zip the code
         run: |
           echo "Zipping the function"
-          zip function.zip main
+          zip function.zip bootstrap main
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
