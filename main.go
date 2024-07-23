@@ -1,4 +1,4 @@
-package main
+package domyApi
 
 import (
 	"context"
@@ -42,18 +42,15 @@ type responseRecorder struct {
 	body   []byte
 }
 
-// Header returns the HTTP headers
 func (r *responseRecorder) Header() http.Header {
 	return http.Header{}
 }
 
-// Write writes the response body
 func (r *responseRecorder) Write(b []byte) (int, error) {
 	r.body = append(r.body, b...)
 	return len(b), nil
 }
 
-// WriteHeader sets the HTTP status code
 func (r *responseRecorder) WriteHeader(statusCode int) {
 	r.status = statusCode
 }
