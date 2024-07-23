@@ -41,5 +41,5 @@ jobs:
         env:
           MONGOSTRING: ${{ secrets.MONGOSTRING }}
         run: |
-          aws lambda update-function-code --function-name myLambdaFunction --zip-file fileb://function.zip
-          aws lambda update-function-configuration --function-name myLambdaFunction --environment "Variables={MONGOSTRING=${{ secrets.MONGOSTRING }}}"
+          aws lambda update-function-code --function-name domytest --zip-file fileb://function.zip
+          aws lambda update-function-configuration --function-name domytest --environment "Variables={MONGOSTRING=${{ secrets.MONGOSTRING }}}"
