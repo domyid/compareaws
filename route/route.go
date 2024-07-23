@@ -1,4 +1,4 @@
-package domyApi
+package route
 
 import (
 	"net/http"
@@ -7,6 +7,7 @@ import (
 	controller "github.com/domyid/domyapi/controller"
 )
 
+// URL handles routing for different endpoints
 func URL(w http.ResponseWriter, r *http.Request) {
 	if config.SetAccessControlHeaders(w, r) {
 		return // If it's a preflight request, return early.

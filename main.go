@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
 	route "github.com/domyid/domyapi/route"
 )
 
@@ -29,11 +28,6 @@ func Handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		Headers:    map[string]string{"Content-Type": "application/json"},
 		Body:       string(rr.body),
 	}, nil
-}
-
-// main function starts the Lambda function
-func main() {
-	lambda.Start(Handler)
 }
 
 // responseRecorder is an implementation of http.ResponseWriter
