@@ -1,9 +1,7 @@
-package domyApi
+package main
 
 import (
-	"bytes"
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -11,27 +9,21 @@ import (
 	route "github.com/domyid/domyapi/route"
 )
 
-func WebHookHandler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	log.Printf("Received request: %v", request)
-
+// Handler is the entry point for the AWS Lambda function
+func Handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	// Convert APIGatewayProxyRequest to http.Request
-	req, err := http.NewRequest(request.HTTPMethod, request.Path, bytes.NewReader([]byte(request.Body)))
+	req, err := http.NewRequest(request.HTTPMethod, request.Path, nil)
 	if err != nil {
-		log.Printf("Error creating request: %v", err)
-		return events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}, err
+		return events.APIGatewayProxyResponse{}, err
 	}
 
-	// Set headers
-	for k, v := range request.Headers {
-		req.Header.Set(k, v)
-	}
-
-	// Call the actual handler
+	// Create a responseRecorder to capture the response
 	rr := &responseRecorder{}
+
+	// Call the route.URL function to handle the request
 	route.URL(rr, req)
 
 	// Convert http.Response to APIGatewayProxyResponse
-	log.Printf("Response: status=%d, body=%s", rr.status, string(rr.body))
 	return events.APIGatewayProxyResponse{
 		StatusCode: rr.status,
 		Headers:    map[string]string{"Content-Type": "application/json"},
@@ -39,8 +31,9 @@ func WebHookHandler(ctx context.Context, request events.APIGatewayProxyRequest) 
 	}, nil
 }
 
+// main function starts the Lambda function
 func main() {
-	lambda.Start(WebHookHandler)
+	lambda.Start(Handler)
 }
 
 // responseRecorder is an implementation of http.ResponseWriter
@@ -49,15 +42,18 @@ type responseRecorder struct {
 	body   []byte
 }
 
+// Header returns the HTTP headers
 func (r *responseRecorder) Header() http.Header {
 	return http.Header{}
 }
 
+// Write writes the response body
 func (r *responseRecorder) Write(b []byte) (int, error) {
 	r.body = append(r.body, b...)
 	return len(b), nil
 }
 
+// WriteHeader sets the HTTP status code
 func (r *responseRecorder) WriteHeader(statusCode int) {
 	r.status = statusCode
 }

@@ -25,10 +25,14 @@ jobs:
         run: go test ./...
 
       - name: Build the function
-        run: GOOS=linux GOARCH=amd64 go build -o main main.go
+        run: |
+          echo "Building the function"
+          GOOS=linux GOARCH=amd64 go build -o main main.go
 
       - name: Zip the code
-        run: zip function.zip main
+        run: |
+          echo "Zipping the function"
+          zip function.zip main
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -41,5 +45,6 @@ jobs:
         env:
           MONGOSTRING: ${{ secrets.MONGOSTRING }}
         run: |
+          echo "Deploying the function to AWS Lambda"
           aws lambda update-function-code --function-name domytest --zip-file fileb://function.zip
           aws lambda update-function-configuration --function-name domytest --environment "Variables={MONGOSTRING=${{ secrets.MONGOSTRING }}}"
