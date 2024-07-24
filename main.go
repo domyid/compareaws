@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/", route.URL)
+	http.HandleFunc("WebHook", route.URL)
 	adapter := httpadapter.New(http.DefaultServeMux)
 	lambda.Start(adapter.Proxy)
 }
