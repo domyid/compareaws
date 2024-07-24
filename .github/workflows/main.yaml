@@ -8,7 +8,7 @@ on:
 env:
   AWS_REGION: ap-southeast-2
   FUNCTION_NAME: domytest
-    
+
 permissions:
   contents: read
 
@@ -34,13 +34,14 @@ jobs:
           go-version: '1.21'
 
       - name: Install dependencies
-        run: go get .
+        run: go mod tidy
     
       - name: Building Code
         run: |
-          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o bootstrap main.go
-          zip lambda-handler.zip bootstrap
-
+          GOOS=linux GOARCH=amd64 go build -o bootstrap main.go
+          chmod +x bootstrap
+          zip deploy.zip bootstrap
+      
       - name: Check if lambda exists
         id: lambda_status
         continue-on-error: true
@@ -51,12 +52,11 @@ jobs:
         run: |
           aws lambda create-function \
           --function-name ${{ env.FUNCTION_NAME }} \
-          --zip-file fileb://lambda-handler.zip \
+          --zip-file fileb://deploy.zip \
           --handler bootstrap \
           --runtime provided.al2 \
-          --role ${{ secrets.AWS_ROLE }} \
-          --environment Variables={MONGOSTRING=${{ secrets.MONGOSTRING }}}
+          --role ${{ secrets.AWS_ROLE }}
 
       - name: Update Function
         if: steps.lambda_status.outcome == 'success'
-        run: aws lambda update-function-code --function-name ${{ env.FUNCTION_NAME }} --zip-file fileb://lambda-handler.zip > /dev/null 2>&1
+        run: aws lambda update-function-code --function-name ${{ env.FUNCTION_NAME }} --zip-file fileb://deploy.zip > /dev/null 2>&1
