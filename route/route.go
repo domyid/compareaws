@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -16,7 +17,7 @@ var lambdaClient *lambda.Client
 
 func init() {
 	// Initialize AWS Lambda client
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("ap-southeast-2"))
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-west-2"))
 	if err != nil {
 		fmt.Printf("unable to load SDK config, %v", err)
 	}
@@ -42,68 +43,76 @@ func invokeLambda(functionName string, payload []byte) ([]byte, error) {
 	return result.Payload, nil
 }
 
-func URL(w http.ResponseWriter, r *http.Request) {
-	if configs.SetAccessControlHeaders(w, r) {
-		return // If it's a preflight request, return early.
+func URL(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	if configs.SetAccessControlHeadersForLambda(&request) {
+		return events.APIGatewayProxyResponse{
+			StatusCode: http.StatusNoContent,
+			Headers:    request.Headers,
+		}, nil // If it's a preflight request, return early.
 	}
 
-	var method, path string = r.Method, r.URL.Path
+	var method, path string = request.HTTPMethod, request.Path
+
+	var response events.APIGatewayProxyResponse
 
 	switch {
 	case method == "POST" && path == "/login":
-		invokeLambdaHandler(w, r, "loginLambdaFunction")
+		response = invokeLambdaHandler(request, "loginLambdaFunction")
 	case method == "POST" && path == "/refresh-token":
-		invokeLambdaHandler(w, r, "refreshTokenLambdaFunction")
+		response = invokeLambdaHandler(request, "refreshTokenLambdaFunction")
 	case method == "GET" && path == "/data/mahasiswa":
-		invokeLambdaHandler(w, r, "getMahasiswaLambdaFunction")
+		response = invokeLambdaHandler(request, "getMahasiswaLambdaFunction")
 	case method == "GET" && path == "/data/bimbingan/mahasiswa":
-		invokeLambdaHandler(w, r, "getListBimbinganMahasiswaLambdaFunction")
+		response = invokeLambdaHandler(request, "getListBimbinganMahasiswaLambdaFunction")
 	case method == "POST" && path == "/data/bimbingan/mahasiswa":
-		invokeLambdaHandler(w, r, "postBimbinganMahasiswaLambdaFunction")
+		response = invokeLambdaHandler(request, "postBimbinganMahasiswaLambdaFunction")
 	case method == "GET" && path == "/data/dosen":
-		invokeLambdaHandler(w, r, "getDosenLambdaFunction")
+		response = invokeLambdaHandler(request, "getDosenLambdaFunction")
 	case method == "POST" && path == "/jadwalmengajar":
-		invokeLambdaHandler(w, r, "getJadwalMengajarLambdaFunction")
+		response = invokeLambdaHandler(request, "getJadwalMengajarLambdaFunction")
 	case method == "POST" && path == "/riwayatmengajar":
-		invokeLambdaHandler(w, r, "getRiwayatPerkuliahanLambdaFunction")
+		response = invokeLambdaHandler(request, "getRiwayatPerkuliahanLambdaFunction")
 	case method == "POST" && path == "/absensi":
-		invokeLambdaHandler(w, r, "getAbsensiKelasLambdaFunction")
+		response = invokeLambdaHandler(request, "getAbsensiKelasLambdaFunction")
 	case method == "POST" && path == "/nilai":
-		invokeLambdaHandler(w, r, "getNilaiMahasiswaLambdaFunction")
+		response = invokeLambdaHandler(request, "getNilaiMahasiswaLambdaFunction")
 	case method == "POST" && path == "/BAP":
-		invokeLambdaHandler(w, r, "getBAPLambdaFunction")
+		response = invokeLambdaHandler(request, "getBAPLambdaFunction")
 	case method == "GET" && path == "/data/list/ta":
-		invokeLambdaHandler(w, r, "getListTugasAkhirMahasiswaLambdaFunction")
+		response = invokeLambdaHandler(request, "getListTugasAkhirMahasiswaLambdaFunction")
 	case method == "POST" && path == "/data/list/bimbingan":
-		invokeLambdaHandler(w, r, "getListBimbinganMahasiswaLambdaFunction")
+		response = invokeLambdaHandler(request, "getListBimbinganMahasiswaLambdaFunction")
 	case method == "POST" && path == "/approve/bimbingan":
-		invokeLambdaHandler(w, r, "approveBimbinganLambdaFunction")
+		response = invokeLambdaHandler(request, "approveBimbinganLambdaFunction")
 	default:
-		http.NotFound(w, r)
+		response = events.APIGatewayProxyResponse{
+			StatusCode: http.StatusNotFound,
+			Body:       "Not Found",
+		}
 	}
+	return response, nil
 }
 
-func invokeLambdaHandler(w http.ResponseWriter, r *http.Request, functionName string) {
-	var requestBody map[string]interface{}
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&requestBody)
+func invokeLambdaHandler(request events.APIGatewayProxyRequest, functionName string) events.APIGatewayProxyResponse {
+	payload, err := json.Marshal(request.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	payload, err := json.Marshal(requestBody)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return events.APIGatewayProxyResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       fmt.Sprintf("Failed to marshal request body: %v", err),
+		}
 	}
 
 	responsePayload, err := invokeLambda(functionName, payload)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return events.APIGatewayProxyResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       fmt.Sprintf("Failed to invoke lambda: %v", err),
+		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(responsePayload)
+	return events.APIGatewayProxyResponse{
+		StatusCode: http.StatusOK,
+		Body:       string(responsePayload),
+		Headers:    request.Headers,
+	}
 }

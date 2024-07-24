@@ -1,8 +1,6 @@
 package domyApi
 
-import (
-	"net/http"
-)
+import "github.com/aws/aws-lambda-go/events"
 
 // Daftar origins yang diizinkan
 var Origins = []string{
@@ -15,36 +13,36 @@ var Origins = []string{
 	"https://www.do.my.id",
 }
 
-// Fungsi untuk memeriksa apakah origin diizinkan
-func isAllowedOrigin(origin string) bool {
-	for _, o := range Origins {
-		if o == origin {
-			return true
-		}
-	}
-	return false
-}
-
-// Fungsi untuk mengatur header CORS
-func SetAccessControlHeaders(w http.ResponseWriter, r *http.Request) bool {
-	origin := r.Header.Get("Origin")
+// Fungsi untuk mengatur header CORS untuk Lambda
+func SetAccessControlHeadersForLambda(request *events.APIGatewayProxyRequest) bool {
+	origin := request.Headers["Origin"]
 
 	if isAllowedOrigin(origin) {
 		// Set CORS headers for the preflight request
-		if r.Method == http.MethodOptions {
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Login")
-			w.Header().Set("Access-Control-Allow-Methods", "POST,GET,DELETE,PUT")
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			w.Header().Set("Access-Control-Max-Age", "3600")
-			w.WriteHeader(http.StatusNoContent)
+		if request.HTTPMethod == "OPTIONS" {
+			headers := map[string]string{
+				"Access-Control-Allow-Credentials": "true",
+				"Access-Control-Allow-Headers":     "Content-Type,Login",
+				"Access-Control-Allow-Methods":     "POST,GET,DELETE,PUT",
+				"Access-Control-Allow-Origin":      origin,
+				"Access-Control-Max-Age":           "3600",
+			}
+			for key, value := range headers {
+				request.Headers[key] = value
+			}
 			return true
 		}
 		// Set CORS headers for the main request.
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		w.Header().Set("Access-Control-Allow-Origin", origin)
+		request.Headers["Access-Control-Allow-Credentials"] = "true"
+		request.Headers["Access-Control-Allow-Origin"] = origin
 		return false
 	}
 
 	return false
+}
+
+func isAllowedOrigin(string) bool {
+	// Implementasi pengecekan apakah origin diizinkan
+	// Contoh: return origin == "http://allowed-origin.com"
+	return true // Ubah logika sesuai kebutuhan
 }
