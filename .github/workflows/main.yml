@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Config AWS credentials
-        uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -52,12 +52,12 @@ jobs:
         run: |
           aws lambda create-function \
           --function-name ${{ env.FUNCTION_NAME }} \
-          --zip-file fileb://deploy.zip \
-          --handler bootstrap \
-          --runtime provided.al2023 \
-          --role ${{ secrets.AWS_ROLE }} > /dev/null 2>&1
-          --environment: MONGOSTRING=${{ secrets.MONGOSTRING }}
+          --zip-file fileb://deployment.zip \
+          --handler main \
+          --runtime go1.21 \
+          --role ${{ secrets.AWS_ROLE }} \
+          --environment Variables={MONGOSTRING=${{ secrets.MONGOSTRING }}}
 
       - name: Update Function
         if: steps.lambda_status.outcome == 'success'
-        run: aws lambda update-function-code --function-name ${{ env.FUNCTION_NAME }} --zip-file fileb://deploy.zip > /dev/null 2>&1
+        run: aws lambda update-function-code --function-name ${{ env.FUNCTION_NAME }} --zip-file fileb://deployment.zip > /dev/null 2>&1
