@@ -6,9 +6,9 @@ on:
       - main
 
 env:
-  AWS_REGION: ap-southeast-2 # Change to yours
-  ENTRY_FILE: main.go # Change to yours
-  FUNCTION_NAME: domytest # Change to yours
+  AWS_REGION: ap-southeast-2
+  ENTRY_FILE: main.go
+  FUNCTION_NAME: domytest
     
 permissions:
   contents: read
@@ -54,7 +54,7 @@ jobs:
           --function-name ${{ env.FUNCTION_NAME }} \
           --zip-file fileb://deployment.zip \
           --handler main \
-          --runtime go1.21 \
+          --runtime go1.x \
           --role ${{ secrets.AWS_ROLE }} \
           --environment Variables={MONGOSTRING=${{ secrets.MONGOSTRING }}}
 
