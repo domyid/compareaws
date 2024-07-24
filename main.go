@@ -8,15 +8,28 @@ import (
 	route "github.com/domyid/domyapi/route"
 )
 
-type Handler struct{}
-
-func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	route.URL(w, r)
-}
-
 func main() {
-	handle := new(Handler)
-	http.Handle("/", handle)
-	adapter := httpadapter.New(http.DefaultServeMux)
+	// Create a new HTTP server mux
+	mux := http.NewServeMux()
+
+	// Register routes
+	mux.HandleFunc("/login", route.URL)
+	mux.HandleFunc("/refresh-token", route.URL)
+	mux.HandleFunc("/data/mahasiswa", route.URL)
+	mux.HandleFunc("/data/bimbingan/mahasiswa", route.URL)
+	mux.HandleFunc("/data/dosen", route.URL)
+	mux.HandleFunc("/jadwalmengajar", route.URL)
+	mux.HandleFunc("/riwayatmengajar", route.URL)
+	mux.HandleFunc("/absensi", route.URL)
+	mux.HandleFunc("/nilai", route.URL)
+	mux.HandleFunc("/BAP", route.URL)
+	mux.HandleFunc("/data/list/ta", route.URL)
+	mux.HandleFunc("/data/list/bimbingan", route.URL)
+	mux.HandleFunc("/approve/bimbingan", route.URL)
+
+	// Create an HTTP adapter
+	adapter := httpadapter.New(mux)
+
+	// Start the Lambda function
 	lambda.Start(adapter.Proxy)
 }
