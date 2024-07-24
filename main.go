@@ -3,7 +3,8 @@ package main
 import (
 	"net/http"
 
-	"github.com/akrylysov/algnhsa"
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 	route "github.com/domyid/domyapi/route"
 )
 
@@ -16,5 +17,6 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func main() {
 	handle := new(Handler)
 	http.Handle("/", handle)
-	algnhsa.ListenAndServe(http.DefaultServeMux, nil)
+	adapter := httpadapter.New(http.DefaultServeMux)
+	lambda.Start(adapter.Proxy)
 }
