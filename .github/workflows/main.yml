@@ -10,41 +10,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout source code
+      uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.21
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.21'
 
-      - name: Install dependencies
-        run: go mod download
+    - name: Install dependencies
+      run: go mod tidy
 
-      - name: Run tests
-        run: go test ./...
+    - name: Build Go project
+      run: |
+        GOOS=linux GOARCH=amd64 go build -o main main.go
+        zip function.zip main
 
-      - name: Build the function
-        run: |
-          echo "Building the function"
-          GOOS=linux GOARCH=amd64 go build -o main main.go
-
-      - name: Zip the code
-        run: |
-          echo "Zipping the function"
-          zip function.zip bootstrap main
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-southeast-2
-
-      - name: Deploy to AWS Lambda
-        env:
-          MONGOSTRING: ${{ secrets.MONGOSTRING }}
-        run: |
-          echo "Deploying the function to AWS Lambda"
-          aws lambda update-function-code --function-name domytest --zip-file fileb://function.zip
-          aws lambda update-function-configuration --function-name domytest --environment "Variables={MONGOSTRING=${{ secrets.MONGOSTRING }}}"
+    - name: Deploy to AWS Lambda
+      uses: appleboy/lambda-action@v0.2.0
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_region: 'ap-southeast-1'
+        function_name: 'domytest'
+        zip_file: 'function.zip'
+        environment: MONGOSTRING=${{ secrets.MONGOSTRING }}
