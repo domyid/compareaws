@@ -1,10 +1,20 @@
 package main
 
 import (
-	"github.com/aws/aws-lambda-go/lambda"
+	"net/http"
+
+	"github.com/akrylysov/algnhsa"
 	route "github.com/domyid/domyapi/route"
 )
 
+type Handler struct{}
+
+func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	route.URL(w, r)
+}
+
 func main() {
-	lambda.Start(route.URL)
+	handle := new(Handler)
+	http.Handle("/", handle)
+	algnhsa.ListenAndServe(http.DefaultServeMux, nil)
 }
