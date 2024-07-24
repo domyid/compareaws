@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		if config.SetAccessControlHeaders(w, r) {
 			return
 		}
