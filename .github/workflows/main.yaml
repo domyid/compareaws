@@ -38,10 +38,8 @@ jobs:
     
       - name: Building Code
         run: |
-          GOOS=linux GOARCH=amd64 go build -o main main.go
-          echo '#!/bin/sh\ncd $LAMBDA_TASK_ROOT\n./main' > bootstrap
-          chmod +x bootstrap
-          zip deployment.zip bootstrap main
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o bootstrap main.go
+          zip lambda-handler.zip bootstrap
 
       - name: Check if lambda exists
         id: lambda_status
@@ -53,7 +51,7 @@ jobs:
         run: |
           aws lambda create-function \
           --function-name ${{ env.FUNCTION_NAME }} \
-          --zip-file fileb://deployment.zip \
+          --zip-file fileb://lambda-handler.zip \
           --handler bootstrap \
           --runtime provided.al2 \
           --role ${{ secrets.AWS_ROLE }} \
@@ -61,4 +59,4 @@ jobs:
 
       - name: Update Function
         if: steps.lambda_status.outcome == 'success'
-        run: aws lambda update-function-code --function-name ${{ env.FUNCTION_NAME }} --zip-file fileb://deployment.zip > /dev/null 2>&1
+        run: aws lambda update-function-code --function-name ${{ env.FUNCTION_NAME }} --zip-file fileb://lambda-handler.zip > /dev/null 2>&1
