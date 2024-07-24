@@ -1,17 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	route "github.com/domyid/domyapi/route"
 )
-
-type RetMsg struct {
-	Message string `json:"message"`
-}
 
 func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	// Buat response writer dan request dari APIGatewayProxyRequest
@@ -23,6 +21,12 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 			Body:       "Failed to create request",
 		}, nil
 	}
+
+	// Set headers and body
+	for k, v := range request.Headers {
+		req.Header.Set(k, v)
+	}
+	req.Body = io.NopCloser(bytes.NewReader([]byte(request.Body)))
 
 	// Panggil fungsi route.URL untuk menangani permintaan
 	route.URL(writer, req)
