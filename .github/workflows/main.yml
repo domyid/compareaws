@@ -24,10 +24,15 @@ jobs:
       - name: Run tests
         run: go test ./...
 
+      - name: Build the function
+        run: |
+          echo "Building the function"
+          GOOS=linux GOARCH=amd64 go build -o bootstrap main.go
+
       - name: Zip the code
         run: |
           echo "Zipping the function"
-          zip function.zip *
+          zip function.zip bootstrap main
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
