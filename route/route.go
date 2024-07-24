@@ -1,4 +1,4 @@
-package domyApi
+package route
 
 import (
 	"net/http"
