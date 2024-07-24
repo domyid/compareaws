@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -11,5 +12,6 @@ import (
 func main() {
 	http.HandleFunc("/", route.URL)
 	adapter := httpadapter.New(http.DefaultServeMux)
+	log.Println("Starting Lambda with HTTP adapter...")
 	lambda.Start(adapter.Proxy)
 }

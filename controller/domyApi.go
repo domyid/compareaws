@@ -726,5 +726,6 @@ func ApproveBimbingan(w http.ResponseWriter, r *http.Request) {
 func NotFound(respw http.ResponseWriter, req *http.Request) {
 	var resp model.Response
 	resp.Response = "Not Found"
+	fmt.Println("NotFound handler dipanggil")
 	at.WriteJSON(respw, http.StatusNotFound, resp)
 }
