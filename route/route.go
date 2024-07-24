@@ -15,7 +15,7 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	var method, path string = r.Method, r.URL.Path
 
 	switch {
-	case method == "POST" && path == "/login":
+	case method == "POST" && (path == "/login" || path == "login"):
 		controller.LoginSiakad(w, r)
 	case method == "POST" && path == "/refresh-token":
 		controller.RefreshTokens(w, r)
