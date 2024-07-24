@@ -61,3 +61,11 @@ jobs:
       - name: Update Function
         if: steps.lambda_status.outcome == 'success'
         run: aws lambda update-function-code --function-name ${{ env.FUNCTION_NAME }} --zip-file fileb://deployment.zip > /dev/null 2>&1
+
+      - name: Test Function
+        run: |
+          aws lambda invoke \
+            --function-name ${{ env.FUNCTION_NAME }} \
+            --payload '{"key": "value"}' \
+            output.txt
+          cat output.txt
