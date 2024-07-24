@@ -39,10 +39,9 @@ jobs:
     
       - name: Building Code
         run: |
-          GOOS=linux GOARCH=amd64 go build -o bootstrap ${{ env.ENTRY_FILE }}
-          chmod +x bootstrap
-          zip deploy.zip bootstrap
-      
+          GOOS=linux GOARCH=amd64 go build -o main main.go lambda_response_writer.go
+          zip deployment.zip main
+
       - name: Check if lambda exists
         id: lambda_status
         continue-on-error: true
