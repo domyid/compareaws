@@ -1,6 +1,7 @@
 package route
 
 import (
+	"fmt"
 	"net/http"
 
 	config "github.com/domyid/domyapi/config"
@@ -13,6 +14,10 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var method, path string = r.Method, r.URL.Path
+
+	fmt.Println(r.Method)
+	fmt.Println(r.URL)
+	fmt.Println(r.URL.Path)
 
 	switch {
 	case method == "POST" && (path == "/login" || path == "login"):
