@@ -7,7 +7,6 @@ on:
 
 env:
   AWS_REGION: ap-southeast-2
-  ENTRY_FILE: main.go
   FUNCTION_NAME: domytest
     
 permissions:
@@ -39,8 +38,10 @@ jobs:
     
       - name: Building Code
         run: |
-          GOOS=linux GOARCH=amd64 go build -o main main.go lambda_response_writer.go
-          zip deployment.zip main
+          GOOS=linux GOARCH=amd64 go build -o main main.go
+          echo '#!/bin/sh\ncd $LAMBDA_TASK_ROOT\n./main' > bootstrap
+          chmod +x bootstrap
+          zip deployment.zip bootstrap main
 
       - name: Check if lambda exists
         id: lambda_status
@@ -53,8 +54,8 @@ jobs:
           aws lambda create-function \
           --function-name ${{ env.FUNCTION_NAME }} \
           --zip-file fileb://deployment.zip \
-          --handler main \
-          --runtime go1.x \
+          --handler bootstrap \
+          --runtime provided.al2 \
           --role ${{ secrets.AWS_ROLE }} \
           --environment Variables={MONGOSTRING=${{ secrets.MONGOSTRING }}}
 
