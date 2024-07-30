@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: ap-southeast-2
-  FUNCTION_NAME: domytest
+  FUNCTION_NAME: login
 
 permissions:
   contents: read
@@ -31,7 +31,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.x'
 
       - name: Install dependencies
         run: go mod tidy
@@ -45,7 +45,9 @@ jobs:
       - name: Check if lambda exists
         id: lambda_status
         continue-on-error: true
-        run: aws lambda get-function --function-name ${{ env.FUNCTION_NAME }} > /dev/null 2>&1
+        run: |
+          aws lambda get-function --function-name ${{ env.FUNCTION_NAME }} > lambda_status.json 2>&1 || true
+          cat lambda_status.json
          
       - name: Create Function
         if: steps.lambda_status.outcome != 'success'

@@ -1,58 +1,67 @@
-package domyApi
+package helper
 
 import (
-	"io"
-	"log"
-	"net/http"
-	"os"
-	"strings"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"aidanwoods.dev/go-paseto"
+	"github.com/aiteung/atdb"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
+
+	"github.com/domyid/model"
 )
 
-func URLParam(reqpath string, url string) bool {
-	urls := strings.Split(url, ":")
-	prefix := reqpath[:strings.LastIndex(reqpath, "/")+1]
-	return prefix == urls[0]
+func AWSReturnStruct(DataStuct any) string {
+	jsondata, _ := json.Marshal(DataStuct)
+	return string(jsondata)
 }
 
-func GetParam(r *http.Request) string {
-	return r.URL.Path[strings.LastIndex(r.URL.Path, "/")+1:]
+func SetConnection(MongoString, dbname string) (*mongo.Database, error) {
+	fmt.Println("Connecting to MongoDB with URI:", MongoString)
+	MongoInfo := atdb.DBInfo{
+		DBString: MongoString,
+		DBName:   dbname,
+	}
+	conn := atdb.MongoConnect(MongoInfo)
+	if conn == nil {
+		return nil, fmt.Errorf("error connecting to MongoDB: connection is nil")
+	}
+	fmt.Println("Connected to MongoDB")
+	return conn, nil
 }
 
-func GetAddress() (ipport string, network string) {
-	port := os.Getenv("PORT")
-	network = "tcp4"
-	if port == "" {
-		port = ":8080"
-	} else if port[0:1] != ":" {
-		ip := os.Getenv("IP")
-		if ip == "" {
-			ipport = ":" + port
-		} else {
-			if strings.Contains(ip, ".") {
-				ipport = ip + ":" + port
-			} else {
-				ipport = "[" + ip + "]" + ":" + port
-				network = "tcp6"
-			}
-		}
-	}
-	return
+func GetOneUser(MongoConn *mongo.Database, colname string, userdata model.User) model.User {
+	filter := bson.M{"nipp": userdata.Nipp}
+	data := atdb.GetOneDoc[model.User](MongoConn, colname, filter)
+	fmt.Println("User data retrieved:", data)
+	return data
 }
 
-func GetIPaddress() string {
+func PasswordValidator(MongoConn *mongo.Database, colname string, userdata model.User) bool {
+	fmt.Println("Starting password validation")
+	filter := bson.M{"nipp": userdata.Nipp}
+	data := atdb.GetOneDoc[model.User](MongoConn, colname, filter)
+	fmt.Println("User data for validation:", data)
+	hashChecker := CheckPasswordHash(userdata.Password, data.Password)
+	fmt.Println("Password validation result:", hashChecker)
+	return hashChecker
+}
 
-	resp, err := http.Get("https://icanhazip.com/")
+func EncodeWithRole(role, nipp, privatekey string) (string, error) {
+	token := paseto.NewToken()
+	token.SetIssuedAt(time.Now())
+	token.SetNotBefore(time.Now())
+	token.SetExpiration(time.Now().Add(2 * time.Hour))
+	token.SetString("user", nipp)
+	token.SetString("role", role)
+	key, err := paseto.NewV4AsymmetricSecretKeyFromHex(privatekey)
+	return token.V4Sign(key, nil), err
+}
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	return string(body)
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }
